@@ -1,0 +1,39 @@
+{
+    "name": "qcm1",
+    "questions": [
+        {
+            "question": "la darbti nta o ilyass chkon yrb7?",
+            "answers": [
+                "ana",
+                "hwa",
+                "ghays"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "question": "rgkfssgvhdfhsgfd",
+            "answers": [
+                "gdsgdf",
+                "gfsdgfsd"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "question": "fdssgfds",
+            "answers": [
+                "fsgfdsgfsd",
+                "fdssgfd",
+                "fgsdgfsd"
+            ],
+            "correct_answer": 2
+        },
+        {
+            "question": "sdgfdsgfd",
+            "answers": [
+                "fdssgfsd",
+                "gfdsgfsd"
+            ],
+            "correct_answer": 0
+        }
+    ]
+}
