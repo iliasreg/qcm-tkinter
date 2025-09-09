@@ -1,6 +1,7 @@
 import json
 import tkinter as tk
 from tkinter import simpledialog, messagebox
+from models import *
 
 
 class QuizBuilder:
@@ -71,6 +72,12 @@ class QuizBuilder:
         if self.current_question > self.nb_questions:
             with open(self.quizData["name"]+".json", "w") as f:
                 json.dump(self.quizData,f,indent=4)
+            qcm = Qcm()
+            qcm.set_name(self.quizData["name"])
+            qcm.set_filePath(self.quizData["name"]+".json")
+            qcm.create()
+            self.root.deiconify()
+            messagebox.showinfo("Quiz Saved", f"Quiz '{self.quizData['name']}' has been saved!")
             return
         questions = {"question" : "", "answers": [], "correct_answer": 0}
         question = self.ask_textarea(f"Question ${self.current_question} :", prompt="Enter the question")

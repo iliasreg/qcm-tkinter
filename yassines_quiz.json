@@ -1,0 +1,37 @@
+{
+    "name": "yassines_quiz",
+    "questions": [
+        {
+            "question": "Can you help me ?",
+            "answers": [
+                "I can't help you",
+                "I can help you"
+            ],
+            "correct_answer": 0
+        },
+        {
+            "question": "nrerh",
+            "answers": [
+                "erherh",
+                "hjkukuk"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "question": "klrrr",
+            "answers": [
+                "zebi",
+                "jjtyj"
+            ],
+            "correct_answer": 1
+        },
+        {
+            "question": "hrherh",
+            "answers": [
+                ",nnfddd",
+                "hgfddgju"
+            ],
+            "correct_answer": 1
+        }
+    ]
+}
