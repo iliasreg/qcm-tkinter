@@ -16,196 +16,87 @@ else :
     from tkinter import filedialog 
 
 import sqlite3
-from observer import Subject
+import json
+from observer import Subject, ConcreteSubject
 
-class Qcm(Subject) :
-    def __init__(self) :
-        Subject.__init__(self)
-        self.id=id
-        self.name=""
-        self.filePath=""
+class UserModel(Subject):
+    def __init__(self):
+        super().__init__()
+        self.current_user = None
+        self.conn = sqlite3.connect('qcm.db')
+
+    def register_user(self, username, password):
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", 
+                          (username, password))
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def login_user(self, username, password):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE username = ? AND password = ?", 
+                      (username, password))
+        user = cursor.fetchone()
+        if user:
+            self.current_user = {'id': user[0], 'username': username}
+            self.notify()
+            return True
+        return False
+
+    def get_available_qcms(self):
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            SELECT q.id, q.title, q.creator_id, u.username, s.score
+            FROM qcms q
+            JOIN users u ON q.creator_id = u.id
+            LEFT JOIN scores s ON s.qcm_id = q.id AND s.user_id = ?
+        ''', (self.current_user['id'],))
+        return cursor.fetchall()
+
+    def save_qcm(self, title, questions):
+        questions_json = json.dumps(questions)
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO qcms (title, creator_id, questions_json) VALUES (?, ?, ?)",
+                      (title, self.current_user['id'], questions_json))
+        self.conn.commit()
+
+    def save_score(self, qcm_id, score):
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO scores (user_id, qcm_id, score)
+            VALUES (?, ?, ?)
+        ''', (self.current_user['id'], qcm_id, score))
+        self.conn.commit()
     
-    def get_name(self) :
-        return self.name
-    def set_name(self,name) :
-        self.name=name
-    def get_filePath(self) :
-        return self.filePath
-    def set_filePath(self,newPath) :
-        self.filePath=newPath
-
-    def create(self,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()   
-        query="INSERT OR IGNORE INTO qcm(name,filepath) VALUES(?,?)"
-        to_insert=self.get_name(),self.get_filePath()
-        result = cursor.execute(query,to_insert)
-        print(result)
-        connect.commit()
-        cursor.close()
-        connect.close()
-
-    def read(self,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        query="SELECT name, filepath FROM qcm;"
-        results=cursor.execute(query)
-        if results :
-            for result in results :
-                print("Results: ", result)
-        else :
-            print("No qcms inserted yet")
-        cursor.close()
-        connect.close()
-        self.notify()
-
-    def update(self,name, filePath, db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        to_update=name, filePath,  self.get_name()
-        query="UPDATE qcm SET name=?, filepath=? WHERE name=?;"
-        cursor.execute(query,to_update)
-        connect.commit()
-        cursor.close()
-        connect.close()
-        self.notify()
-
-    def delete(self,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        to_delete=self.get_name(),
-        query="DELETE FROM qcm WHERE name=?;"
-        cursor.execute(query,to_delete)
-        connect.commit()
-        cursor.close()
-        connect.close()
-        self.notify()
-
-
-class User(Subject) :
-    def __init__(self) :
-        Subject.__init__(self)
-        self.id=id
-        self.name=""
-        self.password=""
+    def get_qcm_by_title(self, title):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM qcms WHERE title = ?", (title,))
+        return cursor.fetchone()
     
-    def get_name(self) :
-        return self.name
-    def set_name(self,name) :
-        self.name=name
-    def get_password(self) :
-        return self.password
-    def set_password(self,newPass) :
-        self.password=newPass
+    def get_data(self):
+        return "Data"
 
-    def create(self,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()   
-        query="INSERT OR IGNORE INTO users(name,password) VALUES(?,?)"
-        to_insert=self.get_name(),self.get_password()
-        cursor.execute(query,to_insert)
-        connect.commit()
-        cursor.close()
-        connect.close()
-
-    def read(self,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        query="SELECT name, password FROM users;"
-        results=cursor.execute(query)
-        if results :
-            for result in results :
-                print("Results: ", result)
-        else :
-            print("No users inserted yet")
-        cursor.close()
-        connect.close()
-        self.notify()
-
-    def update(self,name, password, db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        to_update=name, password,  self.get_name()
-        query="UPDATE users SET name=?, password=? WHERE name=?;"
-        cursor.execute(query,to_update)
-        connect.commit()
-        cursor.close()
-        connect.close()
-        self.notify()
-
-    def delete(self,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        to_delete=self.get_name(),
-        query="DELETE FROM users WHERE name=?;"
-        cursor.execute(query,to_delete)
-        connect.commit()
-        cursor.close()
-        connect.close()
-        self.notify()
-
-
-class Game(Subject) :
-    def __init__(self) :
-        Subject.__init__(self)
-        self.id_qcm=id
-        self.id_user=id
-        self.score=0
+    def get_qcm_by_id(self, qcm_id):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM qcms WHERE id = ?", (qcm_id,))
+        return cursor.fetchone()
     
-    def get_score(self) :
-        return self.score
-    def set_score(self,newScore) :
-        self.score = newScore
-
-    def create(self, id_qcm, id_user, db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()   
-        query="INSERT OR IGNORE INTO game(id_qcm, id_user, score) VALUES(?,?,?)"
-        to_insert=id_qcm, id_user, self.get_score()
-        cursor.execute(query,to_insert)
-        connect.commit()
-        cursor.close()
-        connect.close()
-
-    def read(self,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        query="SELECT id_qcm, id_user, score FROM game;"
-        results=cursor.execute(query)
-        if results :
-            for result in results :
-                print("Results: ", result)
-        else :
-            print("No games inserted yet")
-        cursor.close()
-        connect.close()
-        self.notify()
-
-    def update(self,score, id_qcm, id_user, db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        to_update=score, id_qcm,  id_user
-        query="UPDATE game SET score=? WHERE id_qcm=? AND id_user=?;"
-        cursor.execute(query,to_update)
-        connect.commit()
-        cursor.close()
-        connect.close()
-        self.notify()
-
-    def delete(self,id_qcm, id_user,db="qcm.db") :
-        connect=sqlite3.connect(db)
-        cursor=connect.cursor()
-        to_delete=id_qcm, id_user
-        query="DELETE FROM game WHERE id_qcm=? AND id_user=?;"
-        cursor.execute(query,to_delete)
-        connect.commit()
-        cursor.close()
-        connect.close()
-        self.notify()
+    def get_qcm_id_by_name(self, qcm_name):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id FROM qcms WHERE title = ?", (qcm_name,))
+        return cursor.fetchone()[0]
+    
+    def save_score(self, qcm_id, score):
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO scores (user_id, qcm_id, score)
+            VALUES (?, ?, ?)
+        ''', (self.current_user['id'], qcm_id, score))
+        self.conn.commit()
 
 
 if   __name__ == "__main__" :
-    model=Qcm()
-    model.set_name("tuto", "filepath")
-    model.create()
-    model.read()
+    pass

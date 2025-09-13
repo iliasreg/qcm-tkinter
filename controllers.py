@@ -15,63 +15,83 @@ else :
     import tkinter as tk
     from tkinter import filedialog 
 
-from models import Generator
-from views import Screen
+import json
+from views import *
 
-class Control :
-    def __init__(self,parent,model,view):
-        self.parent=parent
-        self.model=model
-        self.view=view
-        self.gui()
-        self.actions_binding()
-
-    def gui(self):
-        self.frame=tk.LabelFrame(self.parent,text=self.model.get_name()) 
-        self.scale_frequency()
-        self.spinbox_samples()
-    
-    def scale_frequency(self) :
-        self.var_freq=tk.IntVar()
-        self.var_freq.set(self.model.get_frequency())
-        self.scale_freq=tk.Scale(self.frame,variable=self.var_freq,
-                             label="Frequency",
-                             orient="horizontal",length=250,
-                             from_=0,to=100,tickinterval=10)
-    def spinbox_samples(self) :
-        self.var_samples=tk.IntVar()
-        self.spinbox_samples = tk.Spinbox(self.frame, from_=10, to=500, increment=10, bd=5,textvariable=self.var_samples) #,command=self.on_samples_action)
-        self.var_samples.set(self.model.get_samples()) 
+class Controller(ConcreteObserver):
+    def __init__(self, root, model):
+        self.name = "Controller"
+        self.root = root
+        self.model = model
+        self.model.attach(self)
         
-    def actions_binding(self) :
-        self.scale_freq.bind("<B1-Motion>",self.on_frequency_action)
-        self.spinbox_samples.bind("<Button-1>",self.on_samples_action)
+        self.current_view = None
+        self.show_login()
+    
+    def show_view(self, view_class, *args):
+        if self.current_view:
+            self.current_view.destroy()
+        
+        self.current_view = view_class(self.root, self, *args)
+        self.current_view.pack()
+    
+    def show_login(self):
+        self.show_view(LoginView)
+    
+    def show_main_menu(self):
+        self.show_view(MainMenuView)
+    
+    def show_qcm_list(self):
+        self.show_view(QCMListView)
+    
+    def show_create_qcm(self):
+        self.show_view(CreateQCMView)
+    
+    def show_create_questions(self, num_questions, title):
+        self.show_view(CreateQuestionsView, num_questions, title)
+    
+    def play_qcm(self, qcm_id):
+        qcm = self.model.get_qcm_by_id(qcm_id)
+        qcm_title = qcm[1]
+        qcm_questions = qcm[3]
+        if qcm:
+            questions = json.loads(qcm_questions)
+            self.show_view(PlayQCMView, qcm_title, self.model.get_qcm_id_by_name(qcm_title), questions)
+    
+    def login(self, username, password):
+        if self.model.login_user(username, password):
+            print("Login successful")
+            self.show_main_menu()
+        else:
+            print("Login failed")
+    
+    def register(self, username, password):
+        if self.model.register_user(username, password):
+            print("Registration successful")
+        else:
+            print("Registration failed")
+    
+    def logout(self):
+        self.model.current_user = None
+        self.model.notify()
+        self.show_login()
+    
+    def get_current_user(self):
+        return self.model.current_user['username'] if self.model.current_user else None
+    
+    def get_available_qcms(self):
+        return self.model.get_available_qcms()
+    
+    def save_qcm(self, title, questions):
+        self.model.save_qcm(title, questions)
+        self.show_main_menu()
+    
+    def save_score(self, qcm_id, score):
+       self.model.save_score(qcm_id, score)
+       self.show_main_menu()
 
-    def on_frequency_action(self,event):
-        if  self.model.get_frequency() != self.var_freq.get() :
-            self.model.set_frequency(self.var_freq.get())
-            self.model.generate()
-    def on_samples_action(self,event):
-        samples=int(self.var_samples.get() )
-        print(samples)
-        if  self.model.get_samples() != samples :
-            self.model.set_samples(samples)
-            self.model.generate()
-
-    def layout(self,side="top") :
-        # self.frame.pack(side=side)
-        self.frame.pack(expand=1,fill="x",padx=20)
-        self.scale_freq.pack()
-        self.spinbox_samples.pack()
 
 if   __name__ == "__main__" :
-   root=tk.Tk()
-   model=Generator()
-   view=Screen(root)
-   view.layout()
-   model.attach(view)
-   model.read()
-   control=Control(root,model,view)
-   control.layout()
-   root.mainloop()
+    pass
+
 

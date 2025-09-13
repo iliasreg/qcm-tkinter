@@ -15,36 +15,16 @@ else :
     import tkinter as tk
     from tkinter import filedialog 
 
-import sqlite3
+from models import UserModel
+from controllers import Controller
 
-from models import Generator
-from views import Screen
-from controllers import Control
-
-class MainWindow(tk.Tk) :
-    def __init__(self) :
-        tk.Tk.__init__(self)
-        self.title("CAI : TkInter")
-        self.option_readfile("main.opt")
-        self.menubar()
-        self.create()
-
-    def create(self) :
-        model=Generator() 
-        frame=tk.LabelFrame(self,name="generator_X") 
-        view=Screen(frame)
-        frame.pack()
-        view.layout()
-        model.attach(view)
-
-        control=Control(self,model,view)
-        control.layout()
-
-    def menubar(self) :
-        self.menubar=tk.Menu(self) 
-        self.config(menu=self.menubar)
-
-if __name__=="__main__" :
-    app=MainWindow()
-    app.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.title("QCM Application")
+    root.geometry("600x400")
+    
+    model = UserModel()
+    controller = Controller(root, model)
+    
+    root.mainloop()
 
