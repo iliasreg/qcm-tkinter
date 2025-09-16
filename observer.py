@@ -28,7 +28,8 @@ class Observer:
     def __init__(self):
         pass
     def update(self,subject):
-        raise NotImplementedError
+        pass
+        #raise NotImplementedError
 
 class ConcreteSubject(Subject):
     def __init__(self):

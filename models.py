@@ -17,7 +17,7 @@ else :
 
 import sqlite3
 import json
-from observer import Subject, ConcreteSubject
+from observer import Subject
 
 class UserModel(Subject):
     def __init__(self):
