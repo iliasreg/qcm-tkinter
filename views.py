@@ -78,6 +78,7 @@ class LoginView(StyledFrame, ConcreteObserver):
         self.controller.register(self.username_entry.get(),
                                  self.password_entry.get())
 
+
 class CreateQuestionsView(StyledFrame, ConcreteObserver):
     def __init__(self, parent, controller, num_questions, title):
         super().__init__(parent)
@@ -89,7 +90,6 @@ class CreateQuestionsView(StyledFrame, ConcreteObserver):
         tk.Label(self, text=f"Create Questions — {self.title}",
                  font=("Helvetica", 16, "bold"), bg="#f4f6f9").pack(pady=12)
 
-        # Scrollable area (Canvas + inner frame)
         container = tk.Frame(self, bg="#f4f6f9")
         container.pack(fill='both', expand=True, padx=16, pady=(0,10))
 
@@ -108,17 +108,14 @@ class CreateQuestionsView(StyledFrame, ConcreteObserver):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Create each question block
         for i in range(self.num_questions):
             q_block = ttk.Frame(scrollable, padding=(10, 8))
             q_block.pack(fill='x', pady=6)
 
-            # Question label + entry
             ttk.Label(q_block, text=f"Question {i+1}:", font=("Arial", 11, "bold")).grid(row=0, column=0, sticky="w")
             q_entry = ttk.Entry(q_block, width=80)
             q_entry.grid(row=1, column=0, columnspan=4, sticky="we", pady=(4,8))
 
-            # Options
             option_entries = []
             for j in range(4):
                 ttk.Label(q_block, text=f"Option {j+1}:", font=("Arial", 10)).grid(row=2 + j, column=0, sticky="w", pady=2)
@@ -126,23 +123,19 @@ class CreateQuestionsView(StyledFrame, ConcreteObserver):
                 opt_entry.grid(row=2 + j, column=1, columnspan=3, sticky="we", padx=(6,0), pady=2)
                 option_entries.append(opt_entry)
 
-            # Correct option
             ttk.Label(q_block, text="Correct (1-4):", font=("Arial", 10)).grid(row=6, column=0, sticky="w", pady=(6,0))
             correct_var = tk.StringVar(value="1")
             correct_spin = tk.Spinbox(q_block, from_=1, to=4, width=4, textvariable=correct_var)
             correct_spin.grid(row=6, column=1, sticky="w", pady=(6,0))
 
-            # Save references
             self.question_frames.append({
                 "question": q_entry,
                 "options": option_entries,
                 "correct": correct_var
             })
 
-            # make columns expand nicely
             q_block.columnconfigure(1, weight=1)
 
-        # Buttons
         btn_frame = tk.Frame(self, bg="#f4f6f9")
         btn_frame.pack(pady=(6,14))
 
@@ -160,7 +153,6 @@ class CreateQuestionsView(StyledFrame, ConcreteObserver):
                 messagebox.showwarning("Invalid input", f"Question {idx+1}: correct option must be 1-4.")
                 return
 
-            # Basic validation
             if not q_text:
                 messagebox.showwarning("Missing data", f"Question {idx+1} is empty.")
                 return
@@ -177,17 +169,14 @@ class CreateQuestionsView(StyledFrame, ConcreteObserver):
                 "correct": correct_idx
             })
 
-        # Save through controller
         self.controller.save_qcm(self.title, questions)
         messagebox.showinfo("Saved", f"QCM '{self.title}' saved ({len(questions)} questions).")
-        # Go back to the QCM list after saving
         if hasattr(self.controller, "show_qcm_list"):
             self.controller.show_qcm_list()
         else:
             self.controller.show_main_menu()
 
 
-# --- Main Menu View ---
 class MainMenuView(StyledFrame, ConcreteObserver):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -204,7 +193,6 @@ class MainMenuView(StyledFrame, ConcreteObserver):
                    width=25).pack(pady=10)
 
 
-# --- QCM List View ---
 class QCMListView(StyledFrame, ConcreteObserver):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -260,7 +248,6 @@ class QCMListView(StyledFrame, ConcreteObserver):
             self.controller.play_qcm(qcm_id)
 
 
-# --- Create QCM View ---
 class CreateQCMView(StyledFrame, ConcreteObserver):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -289,7 +276,6 @@ class CreateQCMView(StyledFrame, ConcreteObserver):
                                               self.title_entry.get())
 
 
-# --- Play QCM View ---
 class PlayQCMView(StyledFrame, ConcreteObserver):
     def __init__(self, parent, controller, qcm_title, qcm_id, questions):
         super().__init__(parent)

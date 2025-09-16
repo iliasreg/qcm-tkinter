@@ -68,6 +68,8 @@ class Controller(ConcreteObserver):
     def register(self, username, password):
         if self.model.register_user(username, password):
             print("Registration successful")
+            self.model.login_user(username, password)
+            self.show_main_menu()
         else:
             print("Registration failed")
     
