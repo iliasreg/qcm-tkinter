@@ -28,6 +28,9 @@ class Controller(ConcreteObserver):
 
         self.menubar = Menu(self.root)
         self.root.configure(menu=self.menubar)
+
+        self.menubar = Menu(self.root)
+        self.root.configure(menu=self.menubar)
         
         self.current_view = None
         self.show_login()
