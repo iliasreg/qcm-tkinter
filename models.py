@@ -31,6 +31,7 @@ class UserModel(Subject):
             cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", 
                           (username, password))
             self.conn.commit()
+            self.notify()
             return True
         except sqlite3.IntegrityError:
             return False
@@ -49,7 +50,7 @@ class UserModel(Subject):
     def get_available_qcms(self):
         cursor = self.conn.cursor()
         cursor.execute('''
-            SELECT q.id, q.title, q.creator_id, u.username, s.score
+            SELECT q.id, q.title, q.questions_json, q.creator_id, u.username, s.score
             FROM qcms q
             JOIN users u ON q.creator_id = u.id
             LEFT JOIN scores s ON s.qcm_id = q.id AND s.user_id = ?
@@ -62,6 +63,7 @@ class UserModel(Subject):
         cursor.execute("INSERT INTO qcms (title, creator_id, questions_json) VALUES (?, ?, ?)",
                       (title, self.current_user['id'], questions_json))
         self.conn.commit()
+        self.notify()
 
     def save_score(self, qcm_id, score):
         cursor = self.conn.cursor()
@@ -70,6 +72,7 @@ class UserModel(Subject):
             VALUES (?, ?, ?)
         ''', (self.current_user['id'], qcm_id, score))
         self.conn.commit()
+        self.notify()
     
     def get_qcm_by_title(self, title):
         cursor = self.conn.cursor()
@@ -96,6 +99,7 @@ class UserModel(Subject):
             VALUES (?, ?, ?)
         ''', (self.current_user['id'], qcm_id, score))
         self.conn.commit()
+        self.notify()
 
 
 if   __name__ == "__main__" :

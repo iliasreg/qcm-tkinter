@@ -24,7 +24,6 @@ class Controller(ConcreteObserver):
         self.name = "Controller"
         self.root = root
         self.model = model
-        self.model.attach(self)
 
         self.menubar = Menu(self.root)
         self.root.configure(menu=self.menubar)
@@ -35,8 +34,8 @@ class Controller(ConcreteObserver):
         self.current_view = None
         self.show_login()
 
-    def setup_menu(self,context="login"):
-        self.menubar.delete(0,"end")
+    def setup_menu(self, context="login"):
+        self.menubar.delete(0, "end")
 
         self.root.unbind_all("<Control-n>")
         self.root.unbind_all("<Control-p>")
@@ -83,6 +82,16 @@ class Controller(ConcreteObserver):
 
         self.menubar.add_cascade(label="File", menu=self.file_menu)
 
+        # Add About Us menu (always present)
+        self.about_menu = Menu(self.menubar)
+        self.about_menu.add_command(
+            label="About us",
+            accelerator="Ctrl+A",
+            command=self.show_about_us
+        )
+        self.menubar.add_cascade(label="About us", menu=self.about_menu)
+        self.root.bind_all("<Control-a>", lambda e: self.show_about_us())
+
     def show_help(self):
         messagebox.showinfo("Help", "Fill in the QCM title, number of questions, then press 'Create Questions'.")
 
@@ -91,11 +100,10 @@ class Controller(ConcreteObserver):
         if ans:
             self.root.destroy()
     
-    def show_view(self, view_class, *args,context="login"):
+    def show_view(self, view_class, *args, context="login"):
         if self.current_view:
-            self.current_view.destroy()
-        
-        self.current_view = view_class(self.root, self, *args)
+            self.current_view.destroy()  # This will detach the observer
+        self.current_view = view_class(self.root, self, self.model, *args)
         self.current_view.pack(fill="both", expand=True)
         self.setup_menu(context)
     
@@ -155,6 +163,12 @@ class Controller(ConcreteObserver):
     def save_score(self, qcm_id, score):
        self.model.save_score(qcm_id, score)
        self.show_main_menu()
+
+    def show_about_us(self):
+        messagebox.showinfo(
+            "About us",
+            "Creators :\ni24reguig@enib.fr\ny24elmesb@enib.fr"
+        )
 
 
 if   __name__ == "__main__" :

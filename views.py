@@ -3,37 +3,45 @@ import customtkinter as ctk
 from tkinter import messagebox, ttk
 import tkinter as tk
 from observer import ConcreteObserver
+import json
 
-ctk.set_appearance_mode("dark")   # "dark", "light", or "system"
-ctk.set_default_color_theme("blue")  
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
 class LoginView(ctk.CTkFrame, ConcreteObserver):
-    def __init__(self, parent, controller):
-        super().__init__(parent, corner_radius=0, fg_color="transparent")  
+    def __init__(self, parent, controller, model):
+        super().__init__(parent, corner_radius=0, fg_color="transparent")
         self.controller = controller
+        self.model = model
+        self.model.attach(self)
+
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # --- Center container ---
         container = ctk.CTkFrame(self, corner_radius=10)
         container.grid(row=0, column=0, sticky="nsew")
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # --- Login box content ---
         title = ctk.CTkLabel(container, text="🔐 Welcome to QCM App",
                              font=("Segoe UI", 24, "bold"))
         title.pack(pady=(20, 15))
 
-        self.username_entry = ctk.CTkEntry(container, placeholder_text="Username", width=280)
-        self.username_entry.pack(pady=10)
+        # Username label and entry
+        ctk.CTkLabel(container, text="Username", font=("Segoe UI", 14)).pack(pady=(5,0))
+        self.username_entry = ctk.CTkEntry(container, width=280)
+        self.username_entry.pack(pady=5)
 
-        self.password_entry = ctk.CTkEntry(container, placeholder_text="Password", show="*", width=280)
-        self.password_entry.pack(pady=10)
+        # Password label and entry
+        ctk.CTkLabel(container, text="Password", font=("Segoe UI", 14)).pack(pady=(10,0))
+        self.password_entry = ctk.CTkEntry(container, show="*", width=280)
+        self.password_entry.pack(pady=5)
 
         ctk.CTkButton(container, text="Login", command=self.login, width=200).pack(pady=15)
         ctk.CTkButton(container, text="Register", command=self.register,
                       width=200, fg_color="gray25", hover_color="gray40").pack()
+
+        self.update(None)
 
     def login(self):
         self.controller.login(self.username_entry.get(), self.password_entry.get())
@@ -41,16 +49,23 @@ class LoginView(ctk.CTkFrame, ConcreteObserver):
     def register(self):
         self.controller.register(self.username_entry.get(), self.password_entry.get())
 
+    def update(self, subject):
+        self.username_entry.delete(0, tk.END)
+        self.password_entry.delete(0, tk.END)
 
+    def destroy(self):
+        self.model.detach(self)
+        super().destroy()
 
 class MainMenuView(ctk.CTkFrame, ConcreteObserver):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, model):
         super().__init__(parent)
         self.controller = controller
+        self.model = model
+        self.model.attach(self)
 
-        title = ctk.CTkLabel(self, text=f"👋 Hello, {self.controller.get_current_user()}",
-                             font=("Segoe UI", 22, "bold"))
-        title.pack(pady=(40, 30))
+        self.title_label = ctk.CTkLabel(self, text="", font=("Segoe UI", 22, "bold"))
+        self.title_label.pack(pady=(40, 30))
 
         ctk.CTkButton(self, text="▶ Play QCM", command=self.controller.show_qcm_list,
                       width=250).pack(pady=15)
@@ -59,18 +74,29 @@ class MainMenuView(ctk.CTkFrame, ConcreteObserver):
         ctk.CTkButton(self, text="🚪 Logout", command=self.controller.logout,
                       width=250, fg_color="red3", hover_color="darkred").pack(pady=15)
 
+        self.update(None)
+
+    def update(self, subject):
+        user = self.controller.get_current_user()
+        self.title_label.configure(text=f"👋 Hello, {user}")
+
+    def destroy(self):
+        self.model.detach(self)
+        super().destroy()
 
 class QCMListView(ctk.CTkFrame, ConcreteObserver):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, model):
         super().__init__(parent, corner_radius=10)
         self.controller = controller
+        self.model = model
+        self.model.attach(self)
 
         ctk.CTkLabel(self, text="📚 Available QCMs",
                      font=("Segoe UI", 22, "bold")).pack(pady=20)
-        
+
         tree_frame = tk.Frame(self, bg="#f4f6f9")
         tree_frame.pack(fill='both', expand=True, padx=20, pady=5)
-        
+
         scrollbar = tk.Scrollbar(tree_frame)
         scrollbar.pack(side='right', fill='y')
 
@@ -96,15 +122,7 @@ class QCMListView(ctk.CTkFrame, ConcreteObserver):
         ctk.CTkButton(btn_frame, text="⬅ Back",
                       command=self.controller.show_main_menu, width=200).grid(row=0, column=1, padx=10)
 
-        self.load_data()
-
-    def load_data(self):
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-        qcms = self.controller.get_available_qcms()
-        for qcm in qcms:
-            score = qcm[4] if qcm[4] is not None else "Not played"
-            self.tree.insert('', 'end', values=(qcm[0], qcm[1], qcm[3], score))
+        self.update(None)
 
     def play_selected(self):
         selection = self.tree.selection()
@@ -113,25 +131,55 @@ class QCMListView(ctk.CTkFrame, ConcreteObserver):
             qcm_id = item['values'][0]
             self.controller.play_qcm(qcm_id)
 
+    def update(self, subject):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        qcms = self.controller.get_available_qcms()
+        for qcm in qcms:
+            try:
+                questions = json.loads(qcm[2])
+                max_score = len(questions)
+            except Exception:
+                max_score = "-"
+            score = qcm[5]
+            if score is not None and max_score != "-" and (
+                isinstance(score, int) or (isinstance(score, str) and score.isdigit())
+            ):
+                score_display = f"{int(score)}/{max_score}"
+            else:
+                score_display = "Not played"
+            self.tree.insert('', 'end', values=(qcm[0], qcm[1], qcm[4], score_display))
+
+    def destroy(self):
+        self.model.detach(self)
+        super().destroy()
 
 class CreateQCMView(ctk.CTkFrame, ConcreteObserver):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, model):
         super().__init__(parent, corner_radius=10)
         self.controller = controller
+        self.model = model
+        self.model.attach(self)
 
         ctk.CTkLabel(self, text="📝 Create a New QCM",
                      font=("Segoe UI", 22, "bold")).pack(pady=20)
 
-        self.title_entry = ctk.CTkEntry(self, placeholder_text="QCM Title", width=300)
-        self.title_entry.pack(pady=10)
+        # Title label and entry
+        ctk.CTkLabel(self, text="QCM Title", font=("Segoe UI", 14)).pack(pady=(5,0))
+        self.title_entry = ctk.CTkEntry(self, width=300)
+        self.title_entry.pack(pady=5)
 
-        self.num_questions = ctk.CTkEntry(self, placeholder_text="Number of Questions", width=300)
-        self.num_questions.pack(pady=10)
+        # Number of questions label and entry
+        ctk.CTkLabel(self, text="Number of Questions", font=("Segoe UI", 14)).pack(pady=(10,0))
+        self.num_questions = ctk.CTkEntry(self, width=300)
+        self.num_questions.pack(pady=5)
 
         ctk.CTkButton(self, text="Create Questions",
                       command=self.create_questions_frame, width=250).pack(pady=15)
         ctk.CTkButton(self, text="⬅ Back",
                       command=self.controller.show_main_menu, width=250).pack()
+
+        self.update(None)
 
     def create_questions_frame(self):
         try:
@@ -140,11 +188,20 @@ class CreateQCMView(ctk.CTkFrame, ConcreteObserver):
             num = 1
         self.controller.show_create_questions(num, self.title_entry.get())
 
+    def update(self, subject):
+        self.title_entry.delete(0, tk.END)
+        self.num_questions.delete(0, tk.END)
+
+    def destroy(self):
+        self.model.detach(self)
+        super().destroy()
 
 class QuestionsView(ctk.CTkFrame, ConcreteObserver):
-    def __init__(self, parent, controller, num_questions, title):
+    def __init__(self, parent, controller, model, num_questions, title):
         super().__init__(parent, corner_radius=10)
         self.controller = controller
+        self.model = model
+        self.model.attach(self)
         self.num_questions = max(1, int(num_questions))
         self.title = title or "Untitled QCM"
         self.question_frames = []
@@ -159,16 +216,22 @@ class QuestionsView(ctk.CTkFrame, ConcreteObserver):
             block = ctk.CTkFrame(self.scroll, corner_radius=8)
             block.pack(fill="x", pady=8, padx=8)
 
-            q_entry = ctk.CTkEntry(block, placeholder_text=f"Question {i+1}", width=600)
+            # Question label and entry
+            ctk.CTkLabel(block, text=f"Question {i+1}", font=("Segoe UI", 13)).pack(pady=(5,0))
+            q_entry = ctk.CTkEntry(block, width=600)
             q_entry.pack(pady=5)
 
             option_entries = []
             for j in range(4):
-                opt = ctk.CTkEntry(block, placeholder_text=f"Option {j+1}", width=500)
+                # Option label and entry
+                ctk.CTkLabel(block, text=f"Option {j+1}", font=("Segoe UI", 12)).pack(pady=(3,0))
+                opt = ctk.CTkEntry(block, width=500)
                 opt.pack(pady=3)
                 option_entries.append(opt)
 
-            correct_var = ctk.CTkEntry(block, placeholder_text="Correct Option (1-4)", width=150)
+            # Correct option label and entry
+            ctk.CTkLabel(block, text="Correct Option (1-4)", font=("Segoe UI", 12)).pack(pady=(5,0))
+            correct_var = ctk.CTkEntry(block, width=150)
             correct_var.pack(pady=5)
 
             self.question_frames.append({"question": q_entry, "options": option_entries, "correct": correct_var})
@@ -177,6 +240,8 @@ class QuestionsView(ctk.CTkFrame, ConcreteObserver):
         btn_frame.pack(pady=15)
         ctk.CTkButton(btn_frame, text="💾 Save QCM", command=self.save_qcm, width=200).grid(row=0, column=0, padx=10)
         ctk.CTkButton(btn_frame, text="⬅ Back", command=self.controller.show_create_qcm, width=200).grid(row=0, column=1, padx=10)
+
+        self.update(None)
 
     def save_qcm(self):
         questions = []
@@ -197,11 +262,23 @@ class QuestionsView(ctk.CTkFrame, ConcreteObserver):
         messagebox.showinfo("Saved", f"QCM '{self.title}' saved ({len(questions)} questions).")
         self.controller.show_qcm_list()
 
+    def update(self, subject):
+        for fr in self.question_frames:
+            fr["question"].delete(0, tk.END)
+            for opt in fr["options"]:
+                opt.delete(0, tk.END)
+            fr["correct"].delete(0, tk.END)
+
+    def destroy(self):
+        self.model.detach(self)
+        super().destroy()
 
 class PlayQCMView(ctk.CTkFrame, ConcreteObserver):
-    def __init__(self, parent, controller, qcm_title, qcm_id, questions):
+    def __init__(self, parent, controller, model, qcm_title, qcm_id, questions):
         super().__init__(parent, corner_radius=10)
         self.controller = controller
+        self.model = model
+        self.model.attach(self)
         self.qcm_title = qcm_title
         self.qcm_id = qcm_id
         self.questions = questions
@@ -212,16 +289,21 @@ class PlayQCMView(ctk.CTkFrame, ConcreteObserver):
         ctk.CTkLabel(self, text=f"🎮 {qcm_title}",
                      font=("Segoe UI", 22, "bold")).pack(pady=20)
 
+        # Question label
         self.question_label = ctk.CTkLabel(self, text="", wraplength=600, font=("Segoe UI", 16))
         self.question_label.pack(pady=15)
 
         self.options_frame = ctk.CTkFrame(self)
         self.options_frame.pack(pady=10)
 
+        self.option_labels = []
         self.option_buttons = []
         for i in range(4):
+            lbl = ctk.CTkLabel(self.options_frame, text=f"Option {i+1}", font=("Segoe UI", 13))
+            lbl.pack(anchor="w", pady=(5,0), padx=20)
+            self.option_labels.append(lbl)
             rb = ctk.CTkRadioButton(self.options_frame, text="", variable=self.selected_option, value=i)
-            rb.pack(anchor="w", pady=5, padx=20)
+            rb.pack(anchor="w", pady=2, padx=40)
             self.option_buttons.append(rb)
 
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -255,8 +337,14 @@ class PlayQCMView(ctk.CTkFrame, ConcreteObserver):
         self.controller.show_qcm_list()
 
     def update(self, subject):
-        pass
+        self.current_question = 0
+        self.answers = []
+        self.selected_option.set(-1)
+        self.show_question()
 
+    def destroy(self):
+        self.model.detach(self)
+        super().destroy()
 
 if __name__ == "__main__":
     pass
