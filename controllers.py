@@ -18,6 +18,8 @@ else :
 import json
 from views import *
 from tkinter import Menu,messagebox
+import csv
+from datetime import datetime
 
 class Controller():
     def __init__(self, root, model):
@@ -28,9 +30,6 @@ class Controller():
         self.menubar = Menu(self.root)
         self.root.configure(menu=self.menubar)
 
-        self.menubar = Menu(self.root)
-        self.root.configure(menu=self.menubar)
-        
         self.current_view = None
         self.show_login()
 
@@ -53,11 +52,13 @@ class Controller():
         elif context == "main":
             self.file_menu.add_command(label="New",accelerator="Ctrl+n",command=self.show_create_qcm)
             self.file_menu.add_command(label="Play", accelerator="Ctrl+P",command=self.show_qcm_list)
+            self.file_menu.add_command(label="Export QCMs (csv)",accelerator="Ctrl+e",command=self.export_qcms_to_csv)
             self.file_menu.add_command(label="Logout", accelerator="Ctrl+L",command=self.logout)
             self.file_menu.add_separator()
             self.file_menu.add_command(label="Quit", accelerator="Ctrl+Q",command=self.exit)
 
             self.root.bind_all("<Control-n>", lambda e: self.show_create_qcm())
+            self.root.bind_all("<Control-e>", lambda e: self.export_qcms_to_csv())
             self.root.bind_all("<Control-p>", lambda e: self.show_qcm_list())
             self.root.bind_all("<Control-l>", lambda e: self.logout())
             self.root.bind_all("<Control-q>", lambda e: self.exit())
@@ -131,6 +132,9 @@ class Controller():
             self.show_view(PlayQCMView, qcm_title, self.model.get_qcm_id_by_name(qcm_title), questions)
     
     def login(self, username, password):
+        if username == "" or password == "":
+            messagebox.showinfo("Help", "Username or Password are invalid")
+            return
         if self.model.login_user(username, password):
             print("Login successful")
             self.show_main_menu()
@@ -139,6 +143,7 @@ class Controller():
     
     def register(self, username, password):
         if username == "" or password == "":
+            messagebox.showinfo("Help", "Username and Password should not be empty")
             return
         if self.model.register_user(username, password):
             print("Registration successful")
@@ -171,6 +176,56 @@ class Controller():
             "About us",
             "Creators :\ni24reguig@enib.fr\ny24elmesb@enib.fr"
         )
+    
+    def export_qcms_to_csv(self):
+        try:
+            qcms = self.model.get_available_qcms()
+            
+            if not qcms:
+                messagebox.showinfo("Export", "No QCMs available to export.")
+                return
+            
+            timestamp = datetime.now().strftime("%Y_%m_%d")
+            filename = f"qcms_export_{timestamp}.csv"
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
+                initialfile=filename
+            )
+            
+            if not file_path: 
+                return
+            
+            with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                writer.writerow(['ID', 'Title', 'Creator', 'Category', 'Questions', 'Your Score', 'Max Score'])
+                
+                for qcm in qcms:
+                    try:
+                        questions = json.loads(qcm[2])
+                        max_score = len(questions)
+                    except:
+                        max_score = "N/A"
+                    
+                    score = qcm[5] if qcm[5] is not None else "Not played"
+                    
+                    writer.writerow([
+                        qcm[0],  # ID
+                        qcm[1],  # Title
+                        qcm[4],  # Creator
+                        qcm[3],  # Category
+                        len(questions) if 'questions' in locals() else "N/A",  # Number of questions
+                        score,   # User's score
+                        max_score  # Max possible score
+                    ])
+            
+            messagebox.showinfo("Export Successful", 
+                              f"QCMs exported successfully to:\n{file_path}\n\n"
+                              f"Exported {len(qcms)} QCMs.")
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export QCMs:\n{str(e)}")
 
 
 if   __name__ == "__main__" :

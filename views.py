@@ -69,8 +69,8 @@ class LoginView(ctk.CTkFrame, ConcreteObserver):
         self.password_entry.pack(pady=5)
 
         ctk.CTkButton(container, text="Login", command=self.login, width=200).pack(pady=15)
-        ctk.CTkButton(container, text="Register", command=self.register,
-                      width=200, fg_color="gray25", hover_color="gray40").pack()
+        ctk.CTkButton(container, text="Register", command=self.register, width=200, fg_color="gray25", hover_color="gray40").pack()
+        ctk.CTkButton(container, text="Quit", command=self.controller.exit, width=200, fg_color="red3", hover_color="darkred").pack(pady=15)
 
         self.update(None)
 
