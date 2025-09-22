@@ -1,1 +1,3 @@
-*generator_X.text: XXXXXXXXXXXXXXX
+[THEME]
+appearance_mode = light
+color_theme = green

@@ -1,12 +1,45 @@
 # coding: utf-8
+import sys
+major=sys.version_info.major
+minor=sys.version_info.minor
+if major==2 and minor==7 :
+    import Tkinter as tk
+    import tkFileDialog as filedialog
+elif major==3 :
+    import tkinter as tk
+    from tkinter import filedialog
+else :
+    if __name__ == "__main__" :
+        print("Your python version is : ",major,minor)
+        print("... I guess it will work !")
+    import tkinter as tk
+    from tkinter import filedialog
+
 import customtkinter as ctk
 from tkinter import messagebox, ttk
-import tkinter as tk
-from observer import ConcreteObserver
+from observer import *
 import json
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")
+from models import *
+from controllers import *
+
+from config import load_theme_settings 
+
+appearance_mode, color_theme = load_theme_settings()
+
+ctk.set_appearance_mode(appearance_mode)
+ctk.set_default_color_theme(color_theme)
+
+class UsersView(Observer) :
+    def __init__(self,parent,bg="white",width=600,height=300):
+        if DEBUG :
+            print(type(self).__name__+".__init__()")
+        self.parent=parent
+        self.bg=bg
+        self.width,self.height=width,height
+    
+    def update(self,model): 
+        print(type(self).__name__+".update()")
 
 class LoginView(ctk.CTkFrame, ConcreteObserver):
     def __init__(self, parent, controller, model):
@@ -27,12 +60,10 @@ class LoginView(ctk.CTkFrame, ConcreteObserver):
                              font=("Segoe UI", 24, "bold"))
         title.pack(pady=(20, 15))
 
-        # Username label and entry
         ctk.CTkLabel(container, text="Username", font=("Segoe UI", 14)).pack(pady=(5,0))
         self.username_entry = ctk.CTkEntry(container, width=280)
         self.username_entry.pack(pady=5)
 
-        # Password label and entry
         ctk.CTkLabel(container, text="Password", font=("Segoe UI", 14)).pack(pady=(10,0))
         self.password_entry = ctk.CTkEntry(container, show="*", width=280)
         self.password_entry.pack(pady=5)
@@ -164,12 +195,10 @@ class CreateQCMView(ctk.CTkFrame, ConcreteObserver):
         ctk.CTkLabel(self, text="📝 Create a New QCM",
                      font=("Segoe UI", 22, "bold")).pack(pady=20)
 
-        # Title label and entry
         ctk.CTkLabel(self, text="QCM Title", font=("Segoe UI", 14)).pack(pady=(5,0))
         self.title_entry = ctk.CTkEntry(self, width=300)
         self.title_entry.pack(pady=5)
 
-        # Number of questions label and entry
         ctk.CTkLabel(self, text="Number of Questions", font=("Segoe UI", 14)).pack(pady=(10,0))
         self.num_questions = ctk.CTkEntry(self, width=300)
         self.num_questions.pack(pady=5)
@@ -216,20 +245,17 @@ class QuestionsView(ctk.CTkFrame, ConcreteObserver):
             block = ctk.CTkFrame(self.scroll, corner_radius=8)
             block.pack(fill="x", pady=8, padx=8)
 
-            # Question label and entry
             ctk.CTkLabel(block, text=f"Question {i+1}", font=("Segoe UI", 13)).pack(pady=(5,0))
             q_entry = ctk.CTkEntry(block, width=600)
             q_entry.pack(pady=5)
 
             option_entries = []
             for j in range(4):
-                # Option label and entry
                 ctk.CTkLabel(block, text=f"Option {j+1}", font=("Segoe UI", 12)).pack(pady=(3,0))
                 opt = ctk.CTkEntry(block, width=500)
                 opt.pack(pady=3)
                 option_entries.append(opt)
 
-            # Correct option label and entry
             ctk.CTkLabel(block, text="Correct Option (1-4)", font=("Segoe UI", 12)).pack(pady=(5,0))
             correct_var = ctk.CTkEntry(block, width=150)
             correct_var.pack(pady=5)
@@ -286,22 +312,16 @@ class PlayQCMView(ctk.CTkFrame, ConcreteObserver):
         self.answers = []
         self.selected_option = ctk.IntVar(value=-1)
 
-        ctk.CTkLabel(self, text=f"🎮 {qcm_title}",
-                     font=("Segoe UI", 22, "bold")).pack(pady=20)
+        ctk.CTkLabel(self, text=f"🎮 {qcm_title}", font=("Segoe UI", 22, "bold")).pack(pady=20)
 
-        # Question label
         self.question_label = ctk.CTkLabel(self, text="", wraplength=600, font=("Segoe UI", 16))
         self.question_label.pack(pady=15)
 
         self.options_frame = ctk.CTkFrame(self)
         self.options_frame.pack(pady=10)
 
-        self.option_labels = []
         self.option_buttons = []
         for i in range(4):
-            lbl = ctk.CTkLabel(self.options_frame, text=f"Option {i+1}", font=("Segoe UI", 13))
-            lbl.pack(anchor="w", pady=(5,0), padx=20)
-            self.option_labels.append(lbl)
             rb = ctk.CTkRadioButton(self.options_frame, text="", variable=self.selected_option, value=i)
             rb.pack(anchor="w", pady=2, padx=40)
             self.option_buttons.append(rb)
@@ -346,5 +366,14 @@ class PlayQCMView(ctk.CTkFrame, ConcreteObserver):
         self.model.detach(self)
         super().destroy()
 
-if __name__ == "__main__":
-    pass
+
+if   __name__ == "__main__" :
+   root=tk.Tk()
+   root.geometry("1000x400")
+   root.attributes('-fullscreen', True)
+
+   model = UserModel()
+   controller = Controller(root, model)
+
+   view=LoginView(root, controller, model)
+   root.mainloop()

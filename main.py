@@ -13,12 +13,11 @@ else :
         print("Your python version is : ",major,minor)
         print("... I guess it will work !")
     import tkinter as tk
-    from tkinter import filedialog 
+    from tkinter import filedialog
 
-from tkinter import Menu
-from tkinter import messagebox
 from models import UserModel
 from controllers import Controller
+from views import *
 
 
 if __name__ == "__main__":
@@ -29,6 +28,8 @@ if __name__ == "__main__":
     root.bind("<Escape>", lambda event: root.attributes('-fullscreen', False))
 
     model = UserModel()
+    view = UsersView(root)
+    model.attach(view)
     controller = Controller(root, model)
     
     root.mainloop()

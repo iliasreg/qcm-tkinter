@@ -19,7 +19,7 @@ import json
 from views import *
 from tkinter import Menu,messagebox
 
-class Controller(ConcreteObserver):
+class Controller():
     def __init__(self, root, model):
         self.name = "Controller"
         self.root = root
@@ -138,6 +138,8 @@ class Controller(ConcreteObserver):
             print("Login failed")
     
     def register(self, username, password):
+        if username == "" or password == "":
+            return
         if self.model.register_user(username, password):
             print("Registration successful")
             self.model.login_user(username, password)

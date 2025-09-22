@@ -13,7 +13,7 @@ else :
         print("Your python version is : ",major,minor)
         print("... I guess it will work !")
     import tkinter as tk
-    from tkinter import filedialog 
+    from tkinter import filedialog
 
 import sqlite3
 import json
@@ -56,6 +56,25 @@ class UserModel(Subject):
             LEFT JOIN scores s ON s.qcm_id = q.id AND s.user_id = ?
         ''', (self.current_user['id'],))
         return cursor.fetchall()
+    
+    def get_users(self):
+        cursor = self.conn.cursor()
+        cursor.execute('''SELECT * FROM users;''')
+        self.notify()
+        return cursor.fetchall()
+    
+    def delete_user(self, username):
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM users WHERE username=?;", (username))
+        self.conn.commit()
+        self.notify()
+    
+    def update_user_password(self, username, password):
+        cursor = self.conn.cursor()
+        cursor.execute("UPDATE users SET password=? WHERE username=?;",
+                      (password, username))
+        self.conn.commit()
+        self.notify()
 
     def save_qcm(self, title, questions):
         questions_json = json.dumps(questions)
@@ -103,4 +122,25 @@ class UserModel(Subject):
 
 
 if   __name__ == "__main__" :
-    pass
+    model=UserModel()
+    crud = ""
+    while crud != "q":
+        crud=input("choose CRUD (0,1,2,3) or (q) to quit : ")
+        if crud != "q":
+            crud=int(crud)
+        if crud==0 :
+            test_user=["test_user","test_password"]
+            model.register_user(test_user[0], test_user[1])
+            model.get_users()
+        elif  crud==1 :
+            for name in model.get_users():
+                print("user : ", name)
+        elif  crud==2 :
+            test_user=["test_user","new_password"]
+            model.update_user_password(test_user[0], test_user[1])
+            model.get_users()
+        elif crud==3 :
+            username=input("type username to delete: ")
+            model.delete_user(username)
+            for name in model.get_users():
+                print("user : ", name)
