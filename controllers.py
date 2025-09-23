@@ -229,5 +229,13 @@ class Controller():
 
 
 if   __name__ == "__main__" :
-    pass
+   root=tk.Tk()
+   root.geometry("1000x400")
+   root.attributes('-fullscreen', True)
+
+   model = UserModel()
+   controller = Controller(root, model)
+
+   view=LoginView(root, controller, model)
+   root.mainloop()
 

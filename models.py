@@ -65,7 +65,8 @@ class UserModel(Subject):
     
     def delete_user(self, username):
         cursor = self.conn.cursor()
-        cursor.execute("DELETE FROM users WHERE username=?;", (username))
+        cursor.execute('''DELETE FROM users WHERE username=?;''', 
+                       (username,))
         self.conn.commit()
         self.notify()
     
@@ -136,8 +137,9 @@ if   __name__ == "__main__" :
             for name in model.get_users():
                 print("user : ", name)
         elif  crud==2 :
-            test_user=["test_user","new_password"]
-            model.update_user_password(test_user[0], test_user[1])
+            username=input("type username to update: ")
+            password=input("type new password: ")
+            model.update_user_password(username, password)
             model.get_users()
         elif crud==3 :
             username=input("type username to delete: ")

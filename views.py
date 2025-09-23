@@ -15,10 +15,10 @@ else :
     import tkinter as tk
     from tkinter import filedialog
 
-import customtkinter as ctk
 from tkinter import messagebox, ttk
 from observer import *
 import json
+import customtkinter as ctk
 
 from models import *
 from controllers import *
